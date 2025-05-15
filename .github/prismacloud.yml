@@ -1,0 +1,35 @@
+#Prisma Cloud Integration Using GitHub Actions
+#Prerequisites: Prisma Cloud account (Enterprise or Compute Edition),Prisma Access Key and Secret Key,Determine your Prisma API URL (e.g., https://api.prismacloud.io),Store your credentials in GitHub Secrets
+
+name: Prisma Cloud IaC Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  prisma_scan:
+    name: Prisma Cloud IaC Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Prisma Cloud IaC Scan
+        uses: PaloAltoNetworks/prisma-cloud-scan@v1.4
+        with:
+          prisma-api-url: https://api.prismacloud.io
+          access-key: ${{ secrets.PRISMA_ACCESS_KEY }}
+          secret-key: ${{ secrets.PRISMA_SECRET_KEY }}
+          template-path: './'  # Path to your IaC files (e.g., Terraform)
+
+      # Optional: Fail the build on policy violations
+      - name: Fail if scan found issues
+        run: |
+          if grep -q '"failedPolicies": [^0]' prisma-cloud-scan-results.json; then
+            echo "Policy violations found!"
+            exit 1
+          fi
